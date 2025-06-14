@@ -105,3 +105,71 @@ query_states_rope, key_states_rope = apply_rotary_emb_torch(query_states, key_st
 print(f"Q shape {query_states_rope.shape}")
 print(f"K shape {key_states_rope.shape}")
 
+#normalisation step
+class SimpleL2Norm(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.eps = eps
+    
+    #normalise input x along its last dimension.
+    #computes euclidean norm and scales by inverse of norm
+    def forward(self, x):
+        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+    
+if use_qk_norm:
+    qk_norm = SimpleL2Norm()
+    query_states_final = qk_norm(query_states_rope)
+    key_states_final = qk_norm(key_states_rope)
+    print("applied norm")
+else:
+    query_states_final, key_states_final = query_states_rope, key_states_rope
+
+print(f"  query_states_final: {query_states_final.shape}")
+print(f"  key_states_final: {key_states_final.shape}")
+
+#repeat K/V heads for GQA, because there are only 4 unique K/V and 16 unique Q
+def repeat_kv(hidden_states, n_rep):
+    batch, num_key_value_heads,slen, head_dim = hidden_states.shape
+    if n_rep == 1:
+        return hidden_states
+    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
+
+key_states_repeated = repeat_kv(key_states_final, num_key_value_groups)
+value_states_repeated = repeat_kv(value_states, num_key_value_groups)
+
+print("shapes after repeat_kv")
+print(f"  K repeated: {key_states_repeated.shape}")
+print(f"  V repeated: {value_states_repeated.shape}")
+
+#calculate attention scores
+attn_weights = torch.matmul(query_states_final, key_states_repeated.transpose(2,3))
+scaling_factor = 1.0/math.sqrt(head_dim)
+attn_weights *= scaling_factor
+
+#apply mask, which in this case is just a triu
+if attention_mask is not None:
+    print("applying attention mask")
+    causal_mask = attention_mask[:,:,:,:key_states_repeated.shape[-2]] #slice key dimension for mask
+    attn_weights += causal_mask
+else:
+    print("no mask applied")
+
+#softmax
+attn_weights = nn.functional.softmax(attn_weights, dim=1).to(query_states.dtype)
+attn_output = torch.matmul(attn_weights, value_states_repeated)
+
+print("attention calculations")
+print(f"output {attn_output.shape}")
+
+#reshaping attention output
+#before the transpose, it looks like (batch_size, num_heads, seq_len, head_dim)
+attn_output = attn_output.transpose(1,2).contiguous()
+#after, it looks like (batch_size, seq_len, num_heads, head_dim)
+attn_output = attn_output.view(batch_size, sequence_length, hidden_size)
+#view changes the last 2 into 1 combined dimensino, hidden_size = num_heads * head_dim
+final_attn_output = o_proj(attn_output)
+
+print("final")
+print(f"output shape {final_attn_output.shape}")
+#pretty much done at this point. can make it modular and make a proper class
