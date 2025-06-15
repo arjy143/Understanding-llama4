@@ -126,5 +126,6 @@ for i in range(num_merges):
 print("final results")
 print(f"Final vocab size: {len(vocab)}")
 print(f"merges learnt: {merges}")
+print(vocab)
 # Final vocab size: 35
 # merges learnt: {('s', '</w>'): 's</w>', ('i', 's</w>'): 'is</w>', ('t', 'h'): 'th', ('th', 'e'): 'the', ('the', '</w>'): 'the</w>', ('d', 'o'): 'do', ('do', 'c'): 'doc', ('doc', 'u'): 'docu', ('docu', 'm'): 'docum', ('docum', 'e'): 'docume', ('docume', 'n'): 'documen', ('documen', 't'): 'document', ('i', 'r'): 'ir', ('.', '</w>'): '.</w>', ('d', '</w>'): 'd</w>'}      
