@@ -4,15 +4,15 @@
 import collections
 
 class Tokeniser:
-    def __init__(self, corpus, merges=200):
-        self.corpus = corpus
+    def __init__(self, merges=200):
+        self.vocab = vocab
         self.merges = merges
         #####################################refactor below
         #initialise_vocab()
         #initialise_word_splits()
         #update_vocab()
         #load_vocab_to_json()
-        
+
         unique_chars = set()
         for doc in corpus:
             for char in doc:
@@ -79,6 +79,15 @@ class Tokeniser:
         print(f"merges learnt: {merges}")
         print(vocab)
     #########################################refactor above
+    def train(self, corpus):
+        pass
+
+    def encode(self, text):
+        pass
+
+    def decode(self, tokens):
+        pass
+    
     def get_pair_stats(splits):
         pair_counts = collections.defaultdict(int)
         
