@@ -10,5 +10,7 @@ corpus = [
 tokeniser = Tokeniser(merges=15)
 tokeniser.train(corpus)
 
-text = "is this document the third one?!"
-tokeniser.encode(text)
+text = "is this document the third one?"
+tokens = tokeniser.encode(text)
+
+tokeniser.decode(tokens)

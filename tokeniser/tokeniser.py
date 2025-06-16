@@ -27,12 +27,8 @@ class Tokeniser:
 
     def encode(self, text):
         #use token_to_id map to convert text into series of tokens
-        # text_vocab = self._initialise_vocab(text)
-        # current_splits = self._initialise_word_splits(text)
         words = text.split()
         word_splits = [list(word) + ['</w>'] for word in words]
-        #apply merge list
-
         token_ids = []
         for word in word_splits:
             tokens = self._apply_merges(word, self.merge_list)
@@ -41,11 +37,17 @@ class Tokeniser:
                 token_ids.append(token)
 
         print(token_ids)
+        return token_ids
 
-
-    def decode(self, tokens):
-        #use id_to_token map to convert series of tokens into text
-        pass
+    def decode(self, tokens_ids):
+        token_list = []
+        for id in tokens_ids:
+            token = self.id_to_token.get(id, self.id_to_token[35])
+            token_list.append(token)
+        concatenated_text = "".join(token_list)
+        cleaned_text = concatenated_text.replace("</w>", " ")
+        print(cleaned_text)
+        return cleaned_text
     
     def _save_to_json(self):
         if "</unk>" not in self.vocab:
