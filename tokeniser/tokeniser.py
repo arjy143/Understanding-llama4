@@ -2,14 +2,17 @@
 #maybe it should also take in a merge rule parameter, to modify how it merges.
 #also need to add code to detokenise (take token id and turn it into text)
 import collections
+import json
 
 class Tokeniser:
     def __init__(self, merges=200):
         self.vocab = {}
-        self.inverse_vocab = {}
         self.merges = merges
         self.merge_list = {}
+        self.token_to_id = {}
+        self.id_to_token = {}
         self.eod = "</w>"
+        self.unk = "</unk>"
         
     def train(self, corpus):
         self._initialise_vocab(corpus)
@@ -19,7 +22,7 @@ class Tokeniser:
         print(f"Final vocab size: {len(self.vocab)}")
         print(f"merges learnt: {self.merge_list}")
         print(self.vocab)
-        self._load_vocab_to_json()
+        self._save_to_json()
 
 
     def encode(self, text):
@@ -28,8 +31,23 @@ class Tokeniser:
     def decode(self, tokens):
         pass
     
-    def _load_vocab_to_json(self):
-        pass
+    def _save_to_json(self):
+        token_to_id = {token: idx for idx, token in enumerate(self.vocab)}
+        id_to_token = {idx: token for token, idx in token_to_id.items()}
+        self.token_to_id = token_to_id
+        self.id_to_token = id_to_token
+        merges_list = [[list(pair), value] for pair, value in self.merge_list.items()]
+        tokeniser_data = {
+            "token_to_id": token_to_id,
+            "id_to_token": id_to_token,
+            "merge_list": merges_list,
+            "special_tokens": {
+                "eod": "</w>",
+                "unk": "</unk>"
+            }           
+        }
+        with open("./data/tokeniser_config.json", "w") as file:
+            json.dump(tokeniser_data, file)
 
     def _initialise_vocab(self, corpus):
         unique_chars = set()
