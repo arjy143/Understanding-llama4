@@ -15,9 +15,9 @@ class Tokeniser:
         self.unk = "</unk>"
         
     def train(self, corpus):
-        self._initialise_vocab(corpus)
+        self.vocab = self._initialise_vocab(corpus)
         current_splits = self._initialise_word_splits(corpus)
-        self._update_vocab(current_splits)
+        self.vocab, self.merge_list = self._update_vocab(self.vocab, current_splits)
         print("final results")
         print(f"Final vocab size: {len(self.vocab)}")
         print(f"merges learnt: {self.merge_list}")
@@ -26,12 +26,30 @@ class Tokeniser:
 
 
     def encode(self, text):
-        pass
+        #use token_to_id map to convert text into series of tokens
+        # text_vocab = self._initialise_vocab(text)
+        # current_splits = self._initialise_word_splits(text)
+        words = text.split()
+        word_splits = [list(word) + ['</w>'] for word in words]
+        #apply merge list
+
+        token_ids = []
+        for word in word_splits:
+            tokens = self._apply_merges(word, self.merge_list)
+            for token in tokens:
+                token = self.token_to_id.get(token, self.token_to_id["</unk>"])
+                token_ids.append(token)
+
+        print(token_ids)
+
 
     def decode(self, tokens):
+        #use id_to_token map to convert series of tokens into text
         pass
     
     def _save_to_json(self):
+        if "</unk>" not in self.vocab:
+            self.vocab.append("</unk>")
         token_to_id = {token: idx for idx, token in enumerate(self.vocab)}
         id_to_token = {idx: token for token, idx in token_to_id.items()}
         self.token_to_id = token_to_id
@@ -57,7 +75,7 @@ class Tokeniser:
         vocab = list(unique_chars)
         vocab.sort()
         vocab.append(self.eod)
-        self.vocab = vocab
+        return vocab
 
     def _initialise_word_splits(self, corpus):
         word_splits = {}
@@ -73,7 +91,8 @@ class Tokeniser:
 
         return word_splits
 
-    def _update_vocab(self, current_splits):
+    def _update_vocab(self, vocab, current_splits):
+        merge_list = {}
         for i in range(self.merges):
             print(f"iteration: {i+1}/{self.merges}")
 
@@ -96,9 +115,11 @@ class Tokeniser:
             print(f"new splits: {current_splits}")
             
             #add new token to vocab, and add new merge rule to list
-            self.vocab.append(new_token)
-            self.merge_list[best_pair] = new_token
+            vocab.append(new_token)
+            merge_list[best_pair] = new_token
 
+        return vocab, merge_list
+        
     def _get_pair_stats(self, splits):
         pair_counts = collections.defaultdict(int)
         
@@ -134,3 +155,25 @@ class Tokeniser:
         
         return new_splits
 
+    def _apply_merges(self, word, merges_set):
+        word = word[:]
+        while True:
+            pairs = [(word[i], word[i+1]) for i in range(len(word)-1)]
+            merge_candidate = None
+            for pair in pairs:
+                if pair in merges_set:
+                    merge_candidate = pair
+                    break
+            if not merge_candidate:
+                break
+            new_word = []
+            i = 0
+            while i < len(word):
+                if i < len(word)-1 and (word[i], word[i+1]) == merge_candidate:
+                    new_word.append(word[i] + word[i+1])
+                    i += 2
+                else:
+                    new_word.append(word[i])
+                    i += 1
+            word = new_word
+        return word
