@@ -8,7 +8,7 @@ corpus = [
 ]
 
 tokeniser = Tokeniser(merges=15)
-tokeniser.train(corpus)
+#tokeniser.train(corpus)
 
 text = "is this document the third one?"
 tokens = tokeniser.encode(text)

@@ -6,13 +6,16 @@ import json
 
 class Tokeniser:
     def __init__(self, merges=200):
+        with open("./data/tokeniser_config.json", "r") as file:
+            data = json.load(file)
+            self.token_to_id = data.get("token_to_id", {})
+            self.id_to_token = {int(key): value for key, value in data["id_to_token"].items()}
+            self.merge_list = {tuple(pair): value for pair, value in data.get("merge_list", {})}
+            self.eod = data.get("special_tokens", {}).get("eod", "</w>")
+            self.unk = data.get("special_tokens", {}).get("unk", "</unk>")
+
         self.vocab = {}
         self.merges = merges
-        self.merge_list = {}
-        self.token_to_id = {}
-        self.id_to_token = {}
-        self.eod = "</w>"
-        self.unk = "</unk>"
         
     def train(self, corpus):
         self.vocab = self._initialise_vocab(corpus)
@@ -21,7 +24,6 @@ class Tokeniser:
         print("final results")
         print(f"Final vocab size: {len(self.vocab)}")
         print(f"merges learnt: {self.merge_list}")
-        print(self.vocab)
         self._save_to_json()
 
 
@@ -42,7 +44,7 @@ class Tokeniser:
     def decode(self, tokens_ids):
         token_list = []
         for id in tokens_ids:
-            token = self.id_to_token.get(id, self.id_to_token[35])
+            token = self.id_to_token.get(id, self.unk)
             token_list.append(token)
         concatenated_text = "".join(token_list)
         cleaned_text = concatenated_text.replace("</w>", " ")
