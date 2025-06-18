@@ -45,7 +45,7 @@ class SimplifiedLlama4Attention(nn.Module):
 
         # Apply RoPE
         current_freqs_cis = self.freqs_cis.to(hidden_states.device) # Get precomputed freqs
-        query_states_rope, key_states_rope = self._apply_rotary_emb_torch(query_states, key_states, current_freqs_cis)
+        query_states_rope, key_states_rope = self._apply_rotary_emb_torch(query_states, key_states, current_freqs_cis, position_ids)
 
         # Optional QK Norm
         if self.use_qk_norm:
@@ -99,8 +99,8 @@ class SimplifiedLlama4Attention(nn.Module):
     def _apply_rotary_emb_torch(self,
                                 xq, #query
                                 xk, #key
-                                freqs_cis #rotations
-                                ):
+                                freqs_cis, #rotations
+                                position_ids):
         #only select rotation values for the actual token positions
         freqs_cis = freqs_cis[position_ids]
         freqs_cis = freqs_cis[:, None, :, :]
