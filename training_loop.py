@@ -1,12 +1,15 @@
 import torch
-import torch.nn.functional as F
-from tokeniser.tokeniser import Tokeniser
-from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
+from torch.optim import Adam
+from torch.utils.data import Dataset, DataLoader
+from tokeniser.tokeniser import Tokeniser
 from model.transformer_block import TransformerBlock
 
+# ------------------ Config ------------------
 sequence_length = 14
 batch_size = 2
+num_epochs = 10
+
 tokeniser = Tokeniser(merges=15)
 embedding_dim = hidden_size = 128
 ffn_intermediate_ratio = 8 / 3
@@ -26,47 +29,66 @@ common_config = {
     'ffn_bias': False,
     'rms_norm_eps': 1e-5,
 }
-config = common_config
 vocab_size = len(tokeniser.token_to_id)
 
-model = TransformerBlock(config, vocab_size)
-model.load_state_dict(torch.load("llm_checkpoint.pt"))
-# Optimizer and Loss
-optimizer = Adam(model.parameters(), lr=1e-3)
-criterion = CrossEntropyLoss()
+# ------------------ Model ------------------
+model = TransformerBlock(common_config, vocab_size)
+try:
+    model.load_state_dict(torch.load("llm_checkpoint.pt"))
+    print("Loaded checkpoint.")
+except FileNotFoundError:
+    print("Training from scratch.")
 
+optimizer = Adam(model.parameters(), lr=1e-3)
+criterion = CrossEntropyLoss(ignore_index=-100)
 model.train()
 
-# Prepare inputs (batch_size x seq_len)
-input_ids = torch.tensor(tokeniser.encode("is this document the third one?")).unsqueeze(0).repeat(batch_size, 1)
+# ------------------ Data Preparation ------------------
+data = [
+    "this is the first example",
+    "here is another sentence",
+    "the model will learn from this",
+    "more and more data helps it improve",
+    "adding more lines to simulate a dataset",
+]
 
-# Targets: next token prediction (shift inputs by one to the left)
-# For example, input:  [x1, x2, x3, ..., xN]
-# targets:           [x2, x3, ..., xN, <pad or ignore>]
-targets = input_ids[:, 1:].clone()
-# Pad the last token to avoid size mismatch - fill with -100 so ignored by loss
-pad_token_id = -100
-targets = torch.cat([targets, torch.full((batch_size, 1), pad_token_id)], dim=1)
+# Tokenize all data
+all_tokens = []
+for line in data:
+    all_tokens.extend(tokeniser.encode(line))
 
-# Create causal attention mask (optional, but recommended for autoregressive models)
-# seq_len = input_ids.size(1)
-# attention_mask = torch.triu(torch.ones(seq_len, seq_len) * float('-inf'), diagonal=1)
-# attention_mask = attention_mask.unsqueeze(0).unsqueeze(0).expand(batch_size, 1, seq_len, seq_len)
+# Chunk into sequences of length (sequence_length + 1)
+def chunk_tokens(token_ids, seq_len):
+    return [token_ids[i:i+seq_len] for i in range(0, len(token_ids) - seq_len)]
 
-# Forward pass
-logits = model(input_ids)
+class TokenDataset(Dataset):
+    def __init__(self, token_ids, seq_len):
+        self.sequences = chunk_tokens(token_ids, seq_len + 1)
 
-# Reshape logits and targets for loss
-# logits: (batch_size, seq_len, vocab_size) -> (batch_size*seq_len, vocab_size)
-logits_flat = logits.view(-1, vocab_size)
-targets_flat = targets.view(-1)
+    def __len__(self):
+        return len(self.sequences)
 
-loss = criterion(logits_flat, targets_flat)
+    def __getitem__(self, idx):
+        seq = self.sequences[idx]
+        input_ids = torch.tensor(seq[:-1], dtype=torch.long)
+        targets = torch.tensor(seq[1:], dtype=torch.long)
+        return input_ids, targets
 
-# Backpropagation
-optimizer.zero_grad()
-loss.backward()
-optimizer.step()
+dataset = TokenDataset(all_tokens, sequence_length)
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-print(f"Training loss: {loss.item():.4f}")
-torch.save(model.state_dict(), "llm_checkpoint.pt")
+# ------------------ Training Loop ------------------
+for epoch in range(num_epochs):
+    total_loss = 0
+    for input_ids, targets in dataloader:
+        logits = model(input_ids)  # (batch, seq_len, vocab_size)
+        loss = criterion(logits.view(-1, vocab_size), targets.view(-1))
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+
+    avg_loss = total_loss / len(dataloader)
+    print(f"Epoch {epoch + 1}/{num_epochs} - Loss: {avg_loss:.4f}")
+    torch.save(model.state_dict(), "llm_checkpoint.pt")
