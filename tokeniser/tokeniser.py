@@ -38,7 +38,7 @@ class Tokeniser:
                 token = self.token_to_id.get(token, self.token_to_id["</unk>"])
                 token_ids.append(token)
 
-        print(token_ids)
+        #print(token_ids)
         return token_ids
 
     def decode(self, tokens_ids):
@@ -48,7 +48,7 @@ class Tokeniser:
             token_list.append(token)
         concatenated_text = "".join(token_list)
         cleaned_text = concatenated_text.replace("</w>", " ")
-        print(cleaned_text)
+        #print(cleaned_text)
         return cleaned_text
     
     def _save_to_json(self):

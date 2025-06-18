@@ -52,7 +52,7 @@ model.train()
 #     "adding more lines to simulate a dataset",
 # ]
 from datasets import load_dataset
-dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")[:100]
+dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")[:10]
 data = dataset["text"]
 # Tokenize all data
 all_tokens = []
