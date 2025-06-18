@@ -67,7 +67,7 @@ vocab_size = len(tokeniser.token_to_id)
 model = TransformerBlock(config, vocab_size)
 model.load_state_dict(torch.load("llm_checkpoint.pt"))
 tokeniser = Tokeniser(merges=15)
-prompt = "this is the "
+prompt = "the model "
 #prompt = "is this document the third one?"
-generated = generate_tokens(model, tokeniser, prompt, max_length=10)
+generated = generate_tokens(model, tokeniser, prompt, max_length=50)
 print("Generated text:", generated)
