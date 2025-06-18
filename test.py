@@ -68,11 +68,11 @@ model = TransformerBlock(config, vocab_size)
 model.load_state_dict(torch.load("llm_checkpoint.pt"))
 tokeniser = Tokeniser(merges=10000)
 
-# from datasets import load_dataset
-# dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")[:10]
-# data = dataset["text"]
-# print(data)
-prompt = "what is the capital of France?"
+from datasets import load_dataset
+dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")[:10]
+data = dataset["text"]
+print(data)
+prompt = "which was performed in 2001 at the Royal Court Theatre . He had a guest role in the television series Judge John Deed in"
 #prompt = "is this document the third one?"
 generated = generate_tokens(model, tokeniser, prompt, max_length=50)
 print("Generated text:", generated)
