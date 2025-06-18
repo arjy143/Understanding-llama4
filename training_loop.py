@@ -6,7 +6,7 @@ from tokeniser.tokeniser import Tokeniser
 from model.transformer_block import TransformerBlock
 
 # ------------------ Config ------------------
-sequence_length = 14
+sequence_length = 16
 batch_size = 2
 num_epochs = 10
 
@@ -33,25 +33,27 @@ vocab_size = len(tokeniser.token_to_id)
 
 # ------------------ Model ------------------
 model = TransformerBlock(common_config, vocab_size)
-try:
-    model.load_state_dict(torch.load("llm_checkpoint.pt"))
-    print("Loaded checkpoint.")
-except FileNotFoundError:
-    print("Training from scratch.")
+# try:
+#     model.load_state_dict(torch.load("llm_checkpoint.pt"))
+#     print("Loaded checkpoint.")
+# except FileNotFoundError:
+#     print("Training from scratch.")
 
 optimizer = Adam(model.parameters(), lr=1e-3)
 criterion = CrossEntropyLoss(ignore_index=-100)
 model.train()
 
 # ------------------ Data Preparation ------------------
-data = [
-    "this is the first example",
-    "here is another sentence",
-    "the model will learn from this",
-    "more and more data helps it improve",
-    "adding more lines to simulate a dataset",
-]
-
+# data = [
+#     "this is the first example",
+#     "here is another sentence",
+#     "the model will learn from this",
+#     "more and more data helps it improve",
+#     "adding more lines to simulate a dataset",
+# ]
+from datasets import load_dataset
+dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")[:100]
+data = dataset["text"]
 # Tokenize all data
 all_tokens = []
 for line in data:

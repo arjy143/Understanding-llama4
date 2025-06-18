@@ -30,8 +30,16 @@ The Interior Point method, developed later, offers polynomial time complexity an
 Summarise
 To summarise, many pieces of literature show significant advancements in the use of traditional neural networks for solving optimization problems, and traditional MLPs demonstrate robust performance in both linear and non-linear contexts. However, they have limitations in terms of scalability and efficiency, highlighting the need for different approaches. Kolmogorov-Arnold networks (KANs), with their unique B-spline activation functions, present a promising solution, offering improved representational power and computational efficiency. While initial studies, such as those by Xiaoming et al. (2023), suggest the theoretical advantages of KANs, there are few empirical evaluations across diverse optimization domains. Moreover, there is limited to no research directly comparing KANs with traditional neural network architectures in practical scenarios, particularly in complex problem types like integer, non-convex, and stochastic programming. This project seeks to address these gaps by conducting a systematic investigation of KANs’ performance across a range of optimization problems, providing a comprehensive analysis of their capabilities and potential applications.
 """]
-tokeniser = Tokeniser(merges=15)
-tokeniser.train(corpus)
+from datasets import load_dataset
+
+
+# 1. Load a dataset with lots of text
+dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+print(dataset.shape)
+# 2. Combine all text samples into one big list
+all_texts = dataset["text"]
+tokeniser = Tokeniser(merges=10000)
+tokeniser.train(all_texts)
 
 # text = "is this document the third one?"
 # tokens = tokeniser.encode(text)

@@ -23,7 +23,7 @@ class Tokeniser:
         self.vocab, self.merge_list = self._update_vocab(self.vocab, current_splits)
         print("final results")
         print(f"Final vocab size: {len(self.vocab)}")
-        print(f"merges learnt: {self.merge_list}")
+        #print(f"merges learnt: {self.merge_list}")
         self._save_to_json()
 
 
@@ -98,25 +98,26 @@ class Tokeniser:
     def _update_vocab(self, vocab, current_splits):
         merge_list = {}
         for i in range(self.merges):
-            print(f"iteration: {i+1}/{self.merges}")
+            if i % 100 == 0:
+                print(f"iteration: {i+1}/{self.merges}")
 
             #calculate pair frequencies
             pair_stats = self._get_pair_stats(current_splits)
             if not pair_stats:
-                print("no more pairs to merge")
+                #print("no more pairs to merge")
                 break
             
             sorted_pairs = sorted(pair_stats.items(), key= lambda x: x[1], reverse=True)
-            print(f"top 5: {sorted_pairs[:5]}")
+            #print(f"top 5: {sorted_pairs[:5]}")
             #find best pair
             best_pair = max(pair_stats, key=pair_stats.get)
             best_freq = pair_stats[best_pair]
-            print(f"best pair: {best_pair}, best freq: {best_freq}")
+            #print(f"best pair: {best_pair}, best freq: {best_freq}")
 
             #merge best pair across all word representations
             current_splits = self._merge_pair(best_pair, current_splits)
             new_token = best_pair[0] + best_pair[1]
-            print(f"new splits: {current_splits}")
+            #print(f"new splits: {current_splits}")
             
             #add new token to vocab, and add new merge rule to list
             vocab.append(new_token)
