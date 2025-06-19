@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from model.embedding_layer import BasicEmbeddingLayer
 from model.attention import SimplifiedLlama4Attention
 from model.feedforward import SimplifiedLlama4FFN
-from tokeniser.tokeniser import Tokeniser
 
+# transformer block combines embedding, attention mechanism, feedforward network, and output
 class TransformerBlock(nn.Module):
     def __init__(self, config, vocab_size):
         super().__init__()
@@ -20,12 +19,12 @@ class TransformerBlock(nn.Module):
         # Embedding tokens + positions
         hidden_states = self.embedding(input_ids)
         
-        # Default position_ids if None
+        # default position_ids if None
         if position_ids is None:
             seq_len = input_ids.size(1)
             position_ids = torch.arange(seq_len, device=input_ids.device).unsqueeze(0).expand(input_ids.size(0), -1)
         
-        # Default attention mask: causal mask if not provided
+        # default causal mask if not provided
         if attention_mask is None:
             seq_len = input_ids.size(1)
             # Upper triangular mask with -inf on future positions, 0 on allowed
